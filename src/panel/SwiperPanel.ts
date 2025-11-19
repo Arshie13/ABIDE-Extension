@@ -62,14 +62,14 @@ export class SwiperPanel {
       async (data) => {
         switch (data.type) {
           case "addTask": {
-            if (!data.title) {
+            if (!data.title || !this._taskProvider) {
               return;
             }
             try {
-              const res = await fetch('http://localhost:3000/task', {
+              const res = await fetch(this._taskProvider.apiUrl + '/task', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title: data.title, description: data.description })
+                body: JSON.stringify({ title: data.title, description: data.description, tag: data.tag })
               });
               if (!res.ok) {
                 throw new Error(`HTTP ${res.status}`);
@@ -77,12 +77,15 @@ export class SwiperPanel {
               vscode.window.showInformationMessage('Task added successfully!');
               await this._taskProvider?.fetchTasks();
               await this._update();
-            } catch (err) {
-              vscode.window.showErrorMessage(`Failed to add task: ${err}`);
+            } catch (err: any) {
+              vscode.window.showErrorMessage(`Failed to add task: ${err.message}`);
             }
             break;
           }
           case "updateTaskStatus": {
+            if (!this._taskProvider) {
+              return;
+            }
             try {
               const newStatus = data.newStatus;
               const oldStatus = data.oldStatus;
@@ -91,6 +94,7 @@ export class SwiperPanel {
               if (newStatus === "IN_PROGRESS" && oldStatus !== "IN_PROGRESS") {
                 if (this._gitHelper.isGitAvailable()) {
                   const branchCreated = await this._gitHelper.createBranchFromTask(
+                    data.taskTag,
                     data.taskTitle,
                     data.taskId
                   );
@@ -110,7 +114,7 @@ export class SwiperPanel {
                 }
               }
 
-              const res = await fetch(`http://localhost:3000/update`, {
+              const res = await fetch(`${this._taskProvider.apiUrl}/update`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id: data.taskId, status: newStatus })
@@ -125,8 +129,8 @@ export class SwiperPanel {
               vscode.window.showInformationMessage('Task status updated successfully!');
               await this._taskProvider?.fetchTasks();
               await this._update();
-            } catch (err) {
-              vscode.window.showErrorMessage(`Failed to update task status: ${err}`);
+            } catch (err: any) {
+              vscode.window.showErrorMessage(`Failed to update task status: ${err.message}`);
             }
             break;
           }
@@ -175,11 +179,16 @@ export class SwiperPanel {
   private _getHtmlForWebview(webview: vscode.Webview, tasks: TaskItem[]) {
     const nonce = getNonce();
 
+    const formatStatus = (status: string) => {
+      return status.replace(/_/g, ' ').replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+    };
+
     const taskListHtml = tasks.length === 0
       ? `<tr><td colspan="2" style="text-align:center;">No tasks found.</td></tr>`
       : tasks.map(t => {
         // Escape quotes in title for data attribute
         const escapedTitle = t.title.replace(/"/g, '&quot;');
+        const statuses = ["NOT_STARTED", "IN_PROGRESS", "FOR_TESTING", "DONE"];
 
         return /*html*/`
             <tbody class="task-item">
@@ -190,11 +199,9 @@ export class SwiperPanel {
                           data-task-id="${t.taskId}"
                           data-task-title="${escapedTitle}"
                           data-old-status="${t.status}">
-                    <option value="${t.status}" selected>${(t.status.toString()).replace(/_/g, ' ')}</option>
-                    ${t.status.toString() !== 'NOT_STARTED' ? '<option value="NOT_STARTED">Not Started</option>' : ''}
-                    ${t.status.toString() !== 'IN_PROGRESS' ? '<option value="IN_PROGRESS">In Progress</option>' : ''}
-                    ${t.status.toString() !== 'FOR_TESTING' ? '<option value="FOR_TESTING">For Testing</option>' : ''}
-                    ${t.status.toString() !== 'DONE' ? '<option value="DONE">Done</option>' : ''}
+                    ${statuses.map(s => `
+                      <option value="${s}" ${t.status === s ? 'selected' : ''}>${formatStatus(s)}</option>
+                    `).join('')}
                   </select>
                 </td>
               </tr>

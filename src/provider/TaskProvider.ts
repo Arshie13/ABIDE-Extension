@@ -2,16 +2,19 @@ import * as vscode from 'vscode';
 import 'node-fetch';
 import { TaskItem } from './TaskItem';
 import { DescriptionItem } from './DescriptionItem';
-import { TaskStatus } from '../enum/TaskStatus';
 import { Task } from '../types/TaskType';
+import { GitHelper } from "../git/GitProvider";
 
 export class TaskProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
   private _onDidChangeTreeData: vscode.EventEmitter<TaskItem | undefined | void> = new vscode.EventEmitter<TaskItem | undefined | void>();
+  private _gitHelper: GitHelper;
   readonly onDidChangeTreeData: vscode.Event<TaskItem | undefined | void> = this._onDidChangeTreeData.event;
 
   private tasks: TaskItem[] = [];
 
-  constructor(private apiUrl: string) { }
+  constructor(public apiUrl: string) {
+    this._gitHelper = new GitHelper();
+  }
 
   refresh(): void {
     this._onDidChangeTreeData.fire();
@@ -21,8 +24,15 @@ export class TaskProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
     try {
       const res = await fetch(this.apiUrl + '/tasks');
       const data = await res.json() as Task[];
-      vscode.window.showInformationMessage(JSON.stringify(data));
-      this.tasks = data.map((task: Task) => new TaskItem(task.id, task.title, task.description, task.status));
+      this.tasks = data.map((task: Task) =>
+        new TaskItem(
+          task.id,
+          task.title,
+          task.description,
+          task.tag,
+          task.status
+        )
+      );
       this.refresh();
     } catch (err: any) {
       if (err.code === 'ECONNREFUSED') {
@@ -33,22 +43,40 @@ export class TaskProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
     }
   }
 
-  async updateTask(id: number, status: string) {
+  async updateTask(id: number, status: string, taskTag: string, taskTitle: string) {
     try {
+      if (this._gitHelper.isGitAvailable()) {
+        const branchCreated = await this._gitHelper.createBranchFromTask(
+          taskTag,
+          taskTitle,
+          id.toString()
+        );
+
+        if (!branchCreated) {
+          vscode.window.showWarningMessage('Branch creation cancelled.');
+        }
+      } else {
+        const proceed = await vscode.window.showWarningMessage(
+          'Git not available. Continue without creating branch?',
+          'Yes', 'No'
+        );
+        if (proceed !== 'Yes') {
+          return;
+        }
+      }
       const response = await fetch(`${this.apiUrl}/update`, {
         method: 'PUT',
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({id, status})
+        body: JSON.stringify({ id, status })
       });
       if (!response.ok) {
-        const responseJson = await response.json();
-        console.log("response: ", responseJson);
-        vscode.window.showErrorMessage('Something went wrong while updating task' + responseJson);
+        const responseText = await response.text();
+        vscode.window.showErrorMessage('Something went wrong while updating task: ' + responseText);
         return;
       }
       await this.fetchTasks();
-    } catch (error) {
-      vscode.window.showErrorMessage('Something went wrong' + error);
+    } catch (error: any) {
+      vscode.window.showErrorMessage('Something went wrong: ' + error.message);
     }
   }
 

@@ -6,6 +6,7 @@ export class TaskItem extends vscode.TreeItem {
     public taskId: number,
     public title: string,
     public descriptionText: string,
+    public tag: string,
     public status: TaskStatus
   ) {
     super(title, vscode.TreeItemCollapsibleState.Collapsed);

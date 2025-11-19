@@ -1,9 +1,7 @@
 import * as vscode from 'vscode';
 import 'node-fetch';
-import { SwiperPanel } from './Panel/SwiperPanel';
+import { SwiperPanel } from './panel/SwiperPanel';
 import { TaskProvider } from './provider/TaskProvider';
-import { TaskStatus } from './enum/TaskStatus';
-// import { Task } from './types/TaskType';
 import { TaskItem } from './provider/TaskItem';
 
 export function activate(context: vscode.ExtensionContext) {
@@ -34,11 +32,17 @@ export function activate(context: vscode.ExtensionContext) {
       placeHolder: 'Optional details for this task'
     });
 
+    // Third input for tag
+    const tag = await vscode.window.showInputBox({
+      prompt: 'Enter task type',
+      placeHolder: 'feature | fix | bug | chore'
+    });
+
     try {
-      const res = await fetch('http://localhost:3000/' + '/task', {
+      const res = await fetch(apiUrl + '/task', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, description })
+        body: JSON.stringify({ title, description, tag })
       });
 
       if (!res.ok) {
@@ -64,29 +68,26 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand("abide.markNotStarted", (task: TaskItem) => {
-      vscode.window.showInformationMessage(task.id ? task.id : 'id does not exist');
-      taskProvider.updateTask(task.taskId, "NOT_STARTED");
+      taskProvider.updateTask(task.taskId, "NOT_STARTED", task.tag, task.title);
     })
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand("abide.markInProgress", (task: TaskItem) => {
-      vscode.window.showInformationMessage(task.id ? task.id : 'id does not exist');
-      taskProvider.updateTask(task.taskId, "IN_PROGRESS");
+      vscode.window.showInformationMessage(task.tag);
+      taskProvider.updateTask(task.taskId, "IN_PROGRESS", task.tag, task.title);
     })
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand("abide.markForTesting", (task: TaskItem) => {
-      vscode.window.showInformationMessage(`task id: ${task.taskId}`);
-      taskProvider.updateTask(task.taskId, "FOR_TESTING");
+      taskProvider.updateTask(task.taskId, "FOR_TESTING", task.tag, task.title);
     })
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand("abide.markDone", (task: TaskItem) => {
-      vscode.window.showInformationMessage(task.id ? task.id : 'id does not exist');
-      taskProvider.updateTask(task.taskId, "DONE");
+      taskProvider.updateTask(task.taskId, "DONE", task.tag, task.title);
     })
   );
 

@@ -1,6 +1,6 @@
 export enum TaskStatus {
-  NOT_STARTED = "Not Started",
-  IN_PROGRESS = "In Progress",
-  FOR_TESTING = "For Testing",
-  DONE = "Done"
+  NOT_STARTED = "NOT_STARTED",
+  IN_PROGRESS = "IN_PROGRESS",
+  FOR_TESTING = "FOR_TESTING",
+  DONE = "DONE"
 }

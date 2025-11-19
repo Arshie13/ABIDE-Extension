@@ -62,7 +62,7 @@ export class GitHelper {
       .substring(0, 50); // Limit length
   }
 
-  async createBranchFromTask(taskTitle: string, taskId: string): Promise<boolean> {
+  async createBranchFromTask(taskTag: string, taskTitle: string, taskId: string): Promise<boolean> {
     const repository = this.getRepository();
 
     if (!repository) {
@@ -73,7 +73,7 @@ export class GitHelper {
     try {
       // Create branch name from task
       const sanitizedTitle = this.sanitizeBranchName(taskTitle);
-      const branchName = `feature/${taskId}-${sanitizedTitle}`;
+      const branchName = `${taskTag}/#${taskId}-${sanitizedTitle}`;
 
       // Check if branch already exists
       const branches = await repository.getBranches({ remote: false });

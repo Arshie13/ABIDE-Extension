@@ -34,10 +34,10 @@ __export(extension_exports, {
   deactivate: () => deactivate
 });
 module.exports = __toCommonJS(extension_exports);
-var vscode5 = __toESM(require("vscode"));
+var vscode6 = __toESM(require("vscode"));
 
-// src/Panel/SwiperPanel.ts
-var vscode = __toESM(require("vscode"));
+// src/panel/SwiperPanel.ts
+var vscode2 = __toESM(require("vscode"));
 
 // src/getNonce.ts
 function getNonce() {
@@ -49,31 +49,108 @@ function getNonce() {
   return text;
 }
 
-// src/Panel/SwiperPanel.ts
+// src/git/GitProvider.ts
+var vscode = __toESM(require("vscode"));
+var GitHelper = class {
+  gitExtension;
+  git;
+  constructor() {
+    this.initializeGit();
+  }
+  initializeGit() {
+    try {
+      this.gitExtension = vscode.extensions.getExtension("vscode.git")?.exports;
+      if (this.gitExtension) {
+        this.git = this.gitExtension.getAPI(1);
+      }
+    } catch (error) {
+      vscode.window.showErrorMessage("Failed to initialize Git extension");
+    }
+  }
+  getRepository() {
+    if (!this.git || this.git.repositories.length === 0) {
+      return void 0;
+    }
+    return this.git.repositories[0];
+  }
+  sanitizeBranchName(taskTitle) {
+    return taskTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").substring(0, 50);
+  }
+  async createBranchFromTask(taskTag, taskTitle, taskId) {
+    const repository = this.getRepository();
+    if (!repository) {
+      vscode.window.showErrorMessage("No Git repository found in workspace");
+      return false;
+    }
+    try {
+      const sanitizedTitle = this.sanitizeBranchName(taskTitle);
+      const branchName = `${taskTag}/#${taskId}-${sanitizedTitle}`;
+      const branches = await repository.getBranches({ remote: false });
+      const branchExists = branches.some((b) => b.name === branchName);
+      if (branchExists) {
+        const switchToBranch = await vscode.window.showWarningMessage(
+          `Branch "${branchName}" already exists. Would you like to switch to it?`,
+          "Yes",
+          "No"
+        );
+        if (switchToBranch === "Yes") {
+          await repository.checkout(branchName);
+          vscode.window.showInformationMessage(`Switched to branch: ${branchName}`);
+        }
+        return true;
+      }
+      const currentBranch = repository.state.HEAD?.name || "unknown";
+      const create = await vscode.window.showInformationMessage(
+        `Create and checkout branch "${branchName}" from "${currentBranch}"?`,
+        "Create",
+        "Cancel"
+      );
+      if (create !== "Create") {
+        return false;
+      }
+      await repository.createBranch(branchName, true);
+      vscode.window.showInformationMessage(`Created and checked out branch: ${branchName}`);
+      return true;
+    } catch (error) {
+      vscode.window.showErrorMessage(`Failed to create branch: ${error}`);
+      return false;
+    }
+  }
+  async getCurrentBranch() {
+    const repository = this.getRepository();
+    return repository?.state.HEAD?.name;
+  }
+  isGitAvailable() {
+    return !!this.git && this.git.repositories.length > 0;
+  }
+};
+
+// src/panel/SwiperPanel.ts
 var SwiperPanel = class _SwiperPanel {
   static currentPanel;
   _taskProvider;
+  _gitHelper;
   static viewType = "meh";
   _panel;
   _extensionUri;
   _disposables = [];
   static createOrShow(extensionUri, taskProvider) {
-    const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : void 0;
+    const column = vscode2.window.activeTextEditor ? vscode2.window.activeTextEditor.viewColumn : void 0;
     if (_SwiperPanel.currentPanel) {
       _SwiperPanel.currentPanel._panel.reveal(column);
       _SwiperPanel.currentPanel._update();
       _SwiperPanel.currentPanel._taskProvider = taskProvider;
       return;
     }
-    const panel = vscode.window.createWebviewPanel(
+    const panel = vscode2.window.createWebviewPanel(
       _SwiperPanel.viewType,
       "Add Task",
-      column || vscode.ViewColumn.One,
+      column || vscode2.ViewColumn.One,
       {
         enableScripts: true,
         localResourceRoots: [
-          vscode.Uri.joinPath(extensionUri, "media"),
-          vscode.Uri.joinPath(extensionUri, "out/compiled")
+          vscode2.Uri.joinPath(extensionUri, "media"),
+          vscode2.Uri.joinPath(extensionUri, "out/compiled")
         ]
       }
     );
@@ -90,46 +167,75 @@ var SwiperPanel = class _SwiperPanel {
     this._panel = panel;
     this._extensionUri = extensionUri;
     this._taskProvider = taskProvider;
+    this._gitHelper = new GitHelper();
     this._panel.webview.onDidReceiveMessage(
       async (data) => {
-        vscode.window.showInformationMessage(JSON.stringify(data));
         switch (data.type) {
           case "addTask": {
-            if (!data.title) {
+            if (!data.title || !this._taskProvider) {
               return;
             }
             try {
-              const res = await fetch("http://localhost:3000/task", {
+              const res = await fetch(this._taskProvider.apiUrl + "/task", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ title: data.title, description: data.description })
+                body: JSON.stringify({ title: data.title, description: data.description, tag: data.tag })
               });
               if (!res.ok) {
                 throw new Error(`HTTP ${res.status}`);
               }
-              vscode.window.showInformationMessage("Task added successfully!");
+              vscode2.window.showInformationMessage("Task added successfully!");
               await this._taskProvider?.fetchTasks();
+              await this._update();
             } catch (err) {
-              vscode.window.showErrorMessage(`Failed to add task: ${err}`);
+              vscode2.window.showErrorMessage(`Failed to add task: ${err.message}`);
             }
             break;
           }
           case "updateTaskStatus": {
+            if (!this._taskProvider) {
+              return;
+            }
             try {
-              vscode.window.showInformationMessage("after: ", data.newStatus);
-              const res = await fetch(`http://localhost:3000/update`, {
+              const newStatus = data.newStatus;
+              const oldStatus = data.oldStatus;
+              if (newStatus === "IN_PROGRESS" && oldStatus !== "IN_PROGRESS") {
+                if (this._gitHelper.isGitAvailable()) {
+                  const branchCreated = await this._gitHelper.createBranchFromTask(
+                    data.taskTag,
+                    data.taskTitle,
+                    data.taskId
+                  );
+                  if (!branchCreated) {
+                    vscode2.window.showWarningMessage("Branch creation cancelled. Task status not updated.");
+                    return;
+                  }
+                } else {
+                  const proceed = await vscode2.window.showWarningMessage(
+                    "Git not available. Continue without creating branch?",
+                    "Yes",
+                    "No"
+                  );
+                  if (proceed !== "Yes") {
+                    return;
+                  }
+                }
+              }
+              const res = await fetch(`${this._taskProvider.apiUrl}/update`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id: data.taskId, status: data.newStatus })
+                body: JSON.stringify({ id: data.taskId, status: newStatus })
               });
-              vscode.window.showInformationMessage(`result: ${await res.json()}`);
               if (!res.ok) {
-                vscode.window.showInformationMessage("Couldn't update task");
+                const errorData = await res.text();
+                vscode2.window.showErrorMessage(`Couldn't update task: ${errorData}`);
+                return;
               }
-              vscode.window.showInformationMessage("Task status updated successfully!");
+              vscode2.window.showInformationMessage("Task status updated successfully!");
               await this._taskProvider?.fetchTasks();
+              await this._update();
             } catch (err) {
-              vscode.window.showErrorMessage(`Failed to update task status: ${err}`);
+              vscode2.window.showErrorMessage(`Failed to update task status: ${err.message}`);
             }
             break;
           }
@@ -137,18 +243,20 @@ var SwiperPanel = class _SwiperPanel {
             if (!data.value) {
               return;
             }
-            vscode.window.showInformationMessage(data.value);
+            vscode2.window.showInformationMessage(data.value);
             break;
           }
           case "onError": {
             if (!data.value) {
               return;
             }
-            vscode.window.showErrorMessage(data.value);
+            vscode2.window.showErrorMessage(data.value);
             break;
           }
         }
-      }
+      },
+      null,
+      this._disposables
     );
     this._update();
     this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
@@ -170,7 +278,12 @@ var SwiperPanel = class _SwiperPanel {
   }
   _getHtmlForWebview(webview, tasks) {
     const nonce = getNonce();
+    const formatStatus = (status) => {
+      return status.replace(/_/g, " ").replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+    };
     const taskListHtml = tasks.length === 0 ? `<tr><td colspan="2" style="text-align:center;">No tasks found.</td></tr>` : tasks.map((t) => {
+      const escapedTitle = t.title.replace(/"/g, "&quot;");
+      const statuses = ["NOT_STARTED", "IN_PROGRESS", "FOR_TESTING", "DONE"];
       return (
         /*html*/
         `
@@ -178,12 +291,13 @@ var SwiperPanel = class _SwiperPanel {
               <tr class="task-row" data-task-id="${t.taskId}">
                 <td><strong>${t.title}</strong></td>
                 <td>
-                  <select class="status-dropdown" data-task-id="${t.taskId}">
-                    <option value="" selected disabled>${t.status}</option>
-                    <option value="NOT_STARTED">Not Started</option>
-                    <option value="IN_PROGRESS">In Progress</option>
-                    <option value="FOR_TESTING">For Testing</option>
-                    <option value="DONE">Done</option>
+                  <select class="status-dropdown" 
+                          data-task-id="${t.taskId}"
+                          data-task-title="${escapedTitle}"
+                          data-old-status="${t.status}">
+                    ${statuses.map((s) => `
+                      <option value="${s}" ${t.status === s ? "selected" : ""}>${formatStatus(s)}</option>
+                    `).join("")}
                   </select>
                 </td>
               </tr>
@@ -213,15 +327,15 @@ var SwiperPanel = class _SwiperPanel {
             }
             h1, h2 {
               text-align: center;
-              color: var(--vscode-text-link-foreground);
+              color: var(--vscode-textLink-foreground);
               margin-bottom: 20px;
             }
             .form-container {
-              background-color: var(--vscode-side-bar-background);
+              background-color: var(--vscode-sideBar-background);
               padding: 24px;
               border-radius: 8px;
               margin-bottom: 30px;
-              border: 1px solid var(--vscode-side-bar-border, #ccc);
+              border: 1px solid var(--vscode-sideBar-border, #ccc);
             }
             label {
               display: block;
@@ -257,7 +371,7 @@ var SwiperPanel = class _SwiperPanel {
               transition: background-color 0.2s;
             }
             button[type="submit"]:hover {
-              background-color: var(--vscode-button-hover-background, #005a9e);
+              background-color: var(--vscode-button-hoverBackground, #005a9e);
             }
             .task-table {
               width: 100%;
@@ -268,27 +382,28 @@ var SwiperPanel = class _SwiperPanel {
             .task-table td {
               padding: 12px 15px;
               text-align: left;
-              border-bottom: 1px solid var(--vscode-editor-widget-border, #ccc);
+              border-bottom: 1px solid var(--vscode-editorWidget-border, #ccc);
             }
             .task-table th {
-              background-color: var(--vscode-side-bar-background, #f0f0f0);
+              background-color: var(--vscode-sideBar-background, #f0f0f0);
               font-weight: 600;
             }
             .task-table .task-row {
               cursor: pointer;
             }
             .task-table .task-row:hover {
-              background-color: var(--vscode-list-hover-background, #f0f0f0);
+              background-color: var(--vscode-list-hoverBackground, #f0f0f0);
             }
             .task-table .description-row {
               display: none;
             }
             .task-table .description-row td {
-              background-color: var(--vscode-editor-widget-background, #252526);
+              background-color: var(--vscode-editorWidget-background, #252526);
               padding-left: 30px;
             }
             .status-dropdown {
               margin-bottom: 0;
+              cursor: pointer;
             }
           </style>
       </head>
@@ -338,7 +453,6 @@ var SwiperPanel = class _SwiperPanel {
                 description
               });
 
-              // Clear form
               titleInput.value = '';
               descriptionInput.value = '';
             });
@@ -351,7 +465,7 @@ var SwiperPanel = class _SwiperPanel {
                 const taskId = row.dataset.taskId;
                 const descRow = document.getElementById('desc-' + taskId);
                 if (descRow) {
-                  descRow.style.display = descRow.style.display === 'none' ? 'table-row' : 'none';
+                  descRow.style.display = descRow.style.display === 'none' || descRow.style.display === '' ? 'table-row' : 'none';
                 }
               });
             });
@@ -359,12 +473,20 @@ var SwiperPanel = class _SwiperPanel {
             document.querySelectorAll('.status-dropdown').forEach(dropdown => {
               dropdown.addEventListener('change', (e) => {
                 const taskId = e.target.dataset.taskId;
+                const taskTitle = e.target.dataset.taskTitle;
+                const oldStatus = e.target.dataset.oldStatus;
                 const newStatus = e.target.value;
+                
                 vscode.postMessage({
                   type: "updateTaskStatus",
                   taskId,
+                  taskTitle,
+                  oldStatus,
                   newStatus
                 });
+
+                // Update the old status for next change
+                e.target.dataset.oldStatus = newStatus;
               });
             });
           </script>
@@ -376,26 +498,27 @@ var SwiperPanel = class _SwiperPanel {
 };
 
 // src/provider/TaskProvider.ts
-var vscode4 = __toESM(require("vscode"));
+var vscode5 = __toESM(require("vscode"));
 
 // src/provider/TaskItem.ts
-var vscode2 = __toESM(require("vscode"));
-var TaskItem = class extends vscode2.TreeItem {
-  constructor(taskId, title, descriptionText, status) {
-    super(title, vscode2.TreeItemCollapsibleState.Collapsed);
+var vscode3 = __toESM(require("vscode"));
+var TaskItem = class extends vscode3.TreeItem {
+  constructor(taskId, title, descriptionText, tag, status) {
+    super(title, vscode3.TreeItemCollapsibleState.Collapsed);
     this.taskId = taskId;
     this.title = title;
     this.descriptionText = descriptionText;
+    this.tag = tag;
     this.status = status;
     this.contextValue = "abideTask";
   }
 };
 
 // src/provider/DescriptionItem.ts
-var vscode3 = __toESM(require("vscode"));
-var DescriptionItem = class extends vscode3.TreeItem {
+var vscode4 = __toESM(require("vscode"));
+var DescriptionItem = class extends vscode4.TreeItem {
   constructor(text) {
-    super(text, vscode3.TreeItemCollapsibleState.None);
+    super(text, vscode4.TreeItemCollapsibleState.None);
   }
 };
 
@@ -403,8 +526,10 @@ var DescriptionItem = class extends vscode3.TreeItem {
 var TaskProvider = class {
   constructor(apiUrl) {
     this.apiUrl = apiUrl;
+    this._gitHelper = new GitHelper();
   }
-  _onDidChangeTreeData = new vscode4.EventEmitter();
+  _onDidChangeTreeData = new vscode5.EventEmitter();
+  _gitHelper;
   onDidChangeTreeData = this._onDidChangeTreeData.event;
   tasks = [];
   refresh() {
@@ -414,33 +539,58 @@ var TaskProvider = class {
     try {
       const res = await fetch(this.apiUrl + "/tasks");
       const data = await res.json();
-      vscode4.window.showInformationMessage(JSON.stringify(data));
-      this.tasks = data.map((task) => new TaskItem(task.id, task.title, task.description, task.status));
+      this.tasks = data.map(
+        (task) => new TaskItem(
+          task.id,
+          task.title,
+          task.description,
+          task.tag,
+          task.status
+        )
+      );
       this.refresh();
     } catch (err) {
       if (err.code === "ECONNREFUSED") {
-        vscode4.window.showErrorMessage("Failed to load tasks. Please ensure the local server is running at http://localhost:3000.");
+        vscode5.window.showErrorMessage("Failed to load tasks. Please ensure the local server is running at http://localhost:3000.");
       } else {
-        vscode4.window.showErrorMessage(`Failed to load tasks: ${err.message}`);
+        vscode5.window.showErrorMessage(`Failed to load tasks: ${err.message}`);
       }
     }
   }
-  async updateTask(id, status) {
+  async updateTask(id, status, taskTag, taskTitle) {
     try {
+      if (this._gitHelper.isGitAvailable()) {
+        const branchCreated = await this._gitHelper.createBranchFromTask(
+          taskTag,
+          taskTitle,
+          id.toString()
+        );
+        if (!branchCreated) {
+          vscode5.window.showWarningMessage("Branch creation cancelled.");
+        }
+      } else {
+        const proceed = await vscode5.window.showWarningMessage(
+          "Git not available. Continue without creating branch?",
+          "Yes",
+          "No"
+        );
+        if (proceed !== "Yes") {
+          return;
+        }
+      }
       const response = await fetch(`${this.apiUrl}/update`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, status })
       });
       if (!response.ok) {
-        const responseJson = await response.json();
-        console.log("response: ", responseJson);
-        vscode4.window.showErrorMessage("Something went wrong while updating task" + responseJson);
+        const responseText = await response.text();
+        vscode5.window.showErrorMessage("Something went wrong while updating task: " + responseText);
         return;
       }
       await this.fetchTasks();
     } catch (error) {
-      vscode4.window.showErrorMessage("Something went wrong" + error);
+      vscode5.window.showErrorMessage("Something went wrong: " + error.message);
     }
   }
   getTreeItem(element) {
@@ -461,12 +611,12 @@ var TaskProvider = class {
 function activate(context) {
   const apiUrl = "http://localhost:3000";
   const taskProvider = new TaskProvider(apiUrl);
-  vscode5.window.registerTreeDataProvider("abideTasks", taskProvider);
-  const refreshCommand = vscode5.commands.registerCommand("abide.refreshTasks", () => {
+  vscode6.window.registerTreeDataProvider("abideTasks", taskProvider);
+  const refreshCommand = vscode6.commands.registerCommand("abide.refreshTasks", () => {
     taskProvider.fetchTasks();
   });
-  const addTaskCommand = vscode5.commands.registerCommand("abide.addTask", async () => {
-    const title = await vscode5.window.showInputBox({
+  const addTaskCommand = vscode6.commands.registerCommand("abide.addTask", async () => {
+    const title = await vscode6.window.showInputBox({
       prompt: "Enter new task title",
       placeHolder: "e.g. Fix bug #42"
     });
@@ -474,57 +624,58 @@ function activate(context) {
       return;
     }
     ;
-    const description = await vscode5.window.showInputBox({
+    const description = await vscode6.window.showInputBox({
       prompt: "Enter task description",
       placeHolder: "Optional details for this task"
     });
+    const tag = await vscode6.window.showInputBox({
+      prompt: "Enter task type",
+      placeHolder: "feature | fix | bug | chore"
+    });
     try {
-      const res = await fetch("http://localhost:3000//task", {
+      const res = await fetch(apiUrl + "/task", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, description })
+        body: JSON.stringify({ title, description, tag })
       });
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`);
       }
-      vscode5.window.showInformationMessage("Task added successfully!");
+      vscode6.window.showInformationMessage("Task added successfully!");
       taskProvider.fetchTasks();
     } catch (err) {
       if (err.code === "ECONNREFUSED") {
-        vscode5.window.showErrorMessage("Failed to add task. Please ensure the local server is running at http://localhost:3000.");
+        vscode6.window.showErrorMessage("Failed to add task. Please ensure the local server is running at http://localhost:3000.");
       } else {
-        vscode5.window.showErrorMessage(`Failed to add task: ${err.message}`);
+        vscode6.window.showErrorMessage(`Failed to add task: ${err.message}`);
       }
     }
   });
   context.subscriptions.push(refreshCommand, addTaskCommand);
   context.subscriptions.push(
-    vscode5.commands.registerCommand("abide.showPanel", () => {
+    vscode6.commands.registerCommand("abide.showPanel", () => {
       SwiperPanel.createOrShow(context.extensionUri, taskProvider);
     })
   );
   context.subscriptions.push(
-    vscode5.commands.registerCommand("abide.markNotStarted", (task) => {
-      vscode5.window.showInformationMessage(task.id ? task.id : "id does not exist");
-      taskProvider.updateTask(task.taskId, "NOT_STARTED");
+    vscode6.commands.registerCommand("abide.markNotStarted", (task) => {
+      taskProvider.updateTask(task.taskId, "NOT_STARTED", task.tag, task.title);
     })
   );
   context.subscriptions.push(
-    vscode5.commands.registerCommand("abide.markInProgress", (task) => {
-      vscode5.window.showInformationMessage(task.id ? task.id : "id does not exist");
-      taskProvider.updateTask(task.taskId, "IN_PROGRESS");
+    vscode6.commands.registerCommand("abide.markInProgress", (task) => {
+      vscode6.window.showInformationMessage(task.tag);
+      taskProvider.updateTask(task.taskId, "IN_PROGRESS", task.tag, task.title);
     })
   );
   context.subscriptions.push(
-    vscode5.commands.registerCommand("abide.markForTesting", (task) => {
-      vscode5.window.showInformationMessage(`task id: ${task.taskId}`);
-      taskProvider.updateTask(task.taskId, "FOR_TESTING");
+    vscode6.commands.registerCommand("abide.markForTesting", (task) => {
+      taskProvider.updateTask(task.taskId, "FOR_TESTING", task.tag, task.title);
     })
   );
   context.subscriptions.push(
-    vscode5.commands.registerCommand("abide.markDone", (task) => {
-      vscode5.window.showInformationMessage(task.id ? task.id : "id does not exist");
-      taskProvider.updateTask(task.taskId, "DONE");
+    vscode6.commands.registerCommand("abide.markDone", (task) => {
+      taskProvider.updateTask(task.taskId, "DONE", task.tag, task.title);
     })
   );
   taskProvider.fetchTasks();
