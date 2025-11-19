@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Element Example</title>
+</head>
+<body>
+    <h1>Select Your Favorite Fruit</h1>
+    <select id="fruitSelect">
+        <option value="" selected disabled>--Please choose an option--</option>
+        <option value="NOT_STARTED">Not Started</option>
+        <option value="IN_PROGRESS">In Progress</option>
+        <option value="FOR_TESTING">For Testing</option>
+        <option value="DONE">Done</option>
+    </select>
+
+    <p>Selected fruit: <span id="selectedFruit">None</span></p>
+
+    <script>
+        const fruitSelect = document.getElementById('fruitSelect');
+        const selectedFruitSpan = document.getElementById('selectedFruit');
+
+        fruitSelect.addEventListener('change', (event) => {
+            selectedFruitSpan.textContent = event.target.value;
+        });
+    </script>
+</body>
+</html>
