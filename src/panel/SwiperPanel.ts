@@ -3,6 +3,7 @@ import { getNonce } from "../getNonce";
 import { TaskProvider } from "../provider/TaskProvider";
 import { TaskItem } from "../provider/TaskItem";
 import { GitHelper } from "../git/GitProvider";
+import * as geminiAI from "../helper/geminiHelper";
 
 export class SwiperPanel {
   public static currentPanel: SwiperPanel | undefined;
@@ -110,6 +111,26 @@ export class SwiperPanel {
                   );
                   if (proceed !== 'Yes') {
                     return;
+                  }
+                }
+              }
+
+              // When marking as DONE, offer to generate commit message
+              if (newStatus === "DONE" && oldStatus !== "DONE") {
+                const generateCommit = await vscode.window.showInformationMessage(
+                  'Task completed! Generate a commit message?',
+                  'Yes', 'No'
+                );
+
+                if (generateCommit === 'Yes') {
+                  const prompt = `Generate a concise git commit message for completing this task: "${data.taskTitle}: ${data.description}". Follow conventional commits format (feat:, fix:, etc.). Keep it under 72 characters. Return only the commit message.`;
+                  const commitMessage = await geminiAI.promptGemini(prompt);
+
+                  if (!commitMessage.text) {
+                    vscode.window.showErrorMessage("Couldn't generate commit message.");
+                  } else {
+                    await vscode.env.clipboard.writeText(commitMessage.text);
+                    vscode.window.showInformationMessage(`Commit message copied to clipboard: ${commitMessage.text}`);
                   }
                 }
               }

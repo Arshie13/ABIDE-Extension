@@ -1,6 +1,6 @@
 {
-  "name": "test-extension",
-  "displayName": "test-extension",
+  "name": "abide",
+  "displayName": "abide",
   "description": "extension experimentation for capstone",
   "version": "0.0.1",
   "engines": {
@@ -11,6 +11,16 @@
   ],
   "main": "./dist/extension.js",
   "contributes": {
+    "configuration": {
+      "title": "abide",
+      "properties": {
+        "abide.geminiApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "api key for gemini"
+        }
+      }
+    },
     "viewsContainers": {
       "activitybar": [
         {
@@ -120,6 +130,7 @@
     "typescript": "^5.9.2"
   },
   "dependencies": {
+    "@google/genai": "^1.30.0",
     "node-fetch": "^3.3.2"
   },
   "extensionDependencies": [
