@@ -68,26 +68,26 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand("abide.markNotStarted", (task: TaskItem) => {
-      taskProvider.updateTask(task.taskId, "NOT_STARTED", task.tag, task.title);
+      taskProvider.updateTask(task.taskId, "NOT_STARTED", task.tag, task.title, task.descriptionText);
     })
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand("abide.markInProgress", (task: TaskItem) => {
       vscode.window.showInformationMessage(task.tag);
-      taskProvider.updateTask(task.taskId, "IN_PROGRESS", task.tag, task.title);
+      taskProvider.updateTask(task.taskId, "IN_PROGRESS", task.tag, task.title, task.descriptionText);
     })
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand("abide.markForTesting", (task: TaskItem) => {
-      taskProvider.updateTask(task.taskId, "FOR_TESTING", task.tag, task.title);
+      taskProvider.updateTask(task.taskId, "FOR_TESTING", task.tag, task.title, task.descriptionText);
     })
   );
 
   context.subscriptions.push(
     vscode.commands.registerCommand("abide.markDone", (task: TaskItem) => {
-      taskProvider.updateTask(task.taskId, "DONE", task.tag, task.title);
+      taskProvider.updateTask(task.taskId, "DONE", task.tag, task.title, task.descriptionText);
     })
   );
 

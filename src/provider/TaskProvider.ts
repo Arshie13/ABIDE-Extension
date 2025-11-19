@@ -4,6 +4,7 @@ import { TaskItem } from './TaskItem';
 import { DescriptionItem } from './DescriptionItem';
 import { Task } from '../types/TaskType';
 import { GitHelper } from "../git/GitProvider";
+import * as geminiAI from "../helper/geminiHelper";
 
 export class TaskProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
   private _onDidChangeTreeData: vscode.EventEmitter<TaskItem | undefined | void> = new vscode.EventEmitter<TaskItem | undefined | void>();
@@ -43,7 +44,7 @@ export class TaskProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
     }
   }
 
-  async updateTask(id: number, status: string, taskTag: string, taskTitle: string) {
+  async updateTask(id: number, status: string, taskTag: string, taskTitle: string, taskDescription: string) {
     try {
       if (this._gitHelper.isGitAvailable()) {
         const branchCreated = await this._gitHelper.createBranchFromTask(
@@ -64,6 +65,26 @@ export class TaskProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
           return;
         }
       }
+
+      if (status === "DONE") {
+        const generateCommit = await vscode.window.showInformationMessage(
+          'Task completed! Generate a commit message?',
+          'Yes', 'No'
+        );
+
+        if (generateCommit === 'Yes') {
+          const prompt = `Generate a concise git commit message for completing this task: "${taskTitle}: ${taskDescription}". Follow conventional commits format (feat:, fix:, etc.). Keep it under 72 characters. Return only the commit message.`;
+          const commitMessage = await geminiAI.promptGemini(prompt);
+
+          if (!commitMessage.text) {
+            vscode.window.showErrorMessage("Couldn't generate commit message.");
+          } else {
+            await vscode.env.clipboard.writeText(commitMessage.text);
+            vscode.window.showInformationMessage(`Commit message copied to clipboard: ${commitMessage.text}`);
+          }
+        }
+      }
+
       const response = await fetch(`${this.apiUrl}/update`, {
         method: 'PUT',
         headers: { "Content-Type": "application/json" },
@@ -74,6 +95,7 @@ export class TaskProvider implements vscode.TreeDataProvider<vscode.TreeItem> {
         vscode.window.showErrorMessage('Something went wrong while updating task: ' + responseText);
         return;
       }
+
       await this.fetchTasks();
     } catch (error: any) {
       vscode.window.showErrorMessage('Something went wrong: ' + error.message);

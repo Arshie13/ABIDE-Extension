@@ -7212,7 +7212,7 @@ var require_ms = __commonJS({
 // node_modules/debug/src/common.js
 var require_common2 = __commonJS({
   "node_modules/debug/src/common.js"(exports2, module2) {
-    function setup(env3) {
+    function setup(env4) {
       createDebug.debug = createDebug;
       createDebug.default = createDebug;
       createDebug.coerce = coerce;
@@ -7221,8 +7221,8 @@ var require_common2 = __commonJS({
       createDebug.enabled = enabled;
       createDebug.humanize = require_ms();
       createDebug.destroy = destroy;
-      Object.keys(env3).forEach((key) => {
-        createDebug[key] = env3[key];
+      Object.keys(env4).forEach((key) => {
+        createDebug[key] = env4[key];
       });
       createDebug.names = [];
       createDebug.skips = [];
@@ -12317,8 +12317,8 @@ var require_loginticket = __commonJS({
        * @param {TokenPayload} pay Payload of the jwt
        * @constructor
        */
-      constructor(env3, pay) {
-        this.envelope = env3;
+      constructor(env4, pay) {
+        this.envelope = env4;
         this.payload = pay;
       }
       getEnvelope() {
@@ -13203,25 +13203,25 @@ var require_envDetect = __commonJS({
       return envPromise;
     }
     async function getEnvMemoized() {
-      let env3 = GCPEnv.NONE;
+      let env4 = GCPEnv.NONE;
       if (isAppEngine()) {
-        env3 = GCPEnv.APP_ENGINE;
+        env4 = GCPEnv.APP_ENGINE;
       } else if (isCloudFunction()) {
-        env3 = GCPEnv.CLOUD_FUNCTIONS;
+        env4 = GCPEnv.CLOUD_FUNCTIONS;
       } else if (await isComputeEngine()) {
         if (await isKubernetesEngine()) {
-          env3 = GCPEnv.KUBERNETES_ENGINE;
+          env4 = GCPEnv.KUBERNETES_ENGINE;
         } else if (isCloudRun()) {
-          env3 = GCPEnv.CLOUD_RUN;
+          env4 = GCPEnv.CLOUD_RUN;
         } else if (isCloudRunJob()) {
-          env3 = GCPEnv.CLOUD_RUN_JOBS;
+          env4 = GCPEnv.CLOUD_RUN_JOBS;
         } else {
-          env3 = GCPEnv.COMPUTE_ENGINE;
+          env4 = GCPEnv.COMPUTE_ENGINE;
         }
       } else {
-        env3 = GCPEnv.NONE;
+        env4 = GCPEnv.NONE;
       }
-      return env3;
+      return env4;
     }
     function isAppEngine() {
       return !!(process.env.GAE_SERVICE || process.env.GAE_MODULE_NAME);
@@ -31323,12 +31323,12 @@ async function getBlobStat(file) {
 function sleep(ms) {
   return new Promise((resolvePromise) => setTimeout(resolvePromise, ms));
 }
-function getEnv(env3) {
+function getEnv(env4) {
   var _a, _b, _c;
-  return (_c = (_b = (_a = process === null || process === void 0 ? void 0 : process.env) === null || _a === void 0 ? void 0 : _a[env3]) === null || _b === void 0 ? void 0 : _b.trim()) !== null && _c !== void 0 ? _c : void 0;
+  return (_c = (_b = (_a = process === null || process === void 0 ? void 0 : process.env) === null || _a === void 0 ? void 0 : _a[env4]) === null || _b === void 0 ? void 0 : _b.trim()) !== null && _c !== void 0 ? _c : void 0;
 }
-function getBooleanEnv(env3) {
-  return stringToBoolean(getEnv(env3));
+function getBooleanEnv(env4) {
+  return stringToBoolean(getEnv(env4));
 }
 function stringToBoolean(str) {
   if (str === void 0) {
@@ -37288,7 +37288,6 @@ var GitHelper = class {
         );
         if (switchToBranch === "Yes") {
           await repository.checkout(branchName);
-          vscode.window.showInformationMessage(`Switched to branch: ${branchName}`);
         }
         return true;
       }
@@ -37302,7 +37301,6 @@ var GitHelper = class {
         return false;
       }
       await repository.createBranch(branchName, true);
-      vscode.window.showInformationMessage(`Created and checked out branch: ${branchName}`);
       return true;
     } catch (error) {
       vscode.window.showErrorMessage(`Failed to create branch: ${error}`);
@@ -37437,7 +37435,7 @@ var SwiperPanel = class _SwiperPanel {
                   "No"
                 );
                 if (generateCommit === "Yes") {
-                  const prompt = `Generate a concise git commit message for completing this task: "${data.taskTitle}". Follow conventional commits format (feat:, fix:, etc.). Keep it under 72 characters. Return only the commit message.`;
+                  const prompt = `Generate a concise git commit message for completing this task: "${data.taskTitle}: ${data.description}". Follow conventional commits format (feat:, fix:, etc.). Keep it under 72 characters. Return only the commit message.`;
                   const commitMessage = await promptGemini(prompt);
                   if (!commitMessage.text) {
                     vscode3.window.showErrorMessage("Couldn't generate commit message.");
@@ -37783,7 +37781,7 @@ var TaskProvider = class {
       }
     }
   }
-  async updateTask(id, status, taskTag, taskTitle) {
+  async updateTask(id, status, taskTag, taskTitle, taskDescription) {
     try {
       if (this._gitHelper.isGitAvailable()) {
         const branchCreated = await this._gitHelper.createBranchFromTask(
@@ -37802,6 +37800,23 @@ var TaskProvider = class {
         );
         if (proceed !== "Yes") {
           return;
+        }
+      }
+      if (status === "DONE") {
+        const generateCommit = await vscode6.window.showInformationMessage(
+          "Task completed! Generate a commit message?",
+          "Yes",
+          "No"
+        );
+        if (generateCommit === "Yes") {
+          const prompt = `Generate a concise git commit message for completing this task: "${taskTitle}: ${taskDescription}". Follow conventional commits format (feat:, fix:, etc.). Keep it under 72 characters. Return only the commit message.`;
+          const commitMessage = await promptGemini(prompt);
+          if (!commitMessage.text) {
+            vscode6.window.showErrorMessage("Couldn't generate commit message.");
+          } else {
+            await vscode6.env.clipboard.writeText(commitMessage.text);
+            vscode6.window.showInformationMessage(`Commit message copied to clipboard: ${commitMessage.text}`);
+          }
         }
       }
       const response = await fetch(`${this.apiUrl}/update`, {
@@ -37885,23 +37900,23 @@ function activate(context) {
   );
   context.subscriptions.push(
     vscode7.commands.registerCommand("abide.markNotStarted", (task) => {
-      taskProvider.updateTask(task.taskId, "NOT_STARTED", task.tag, task.title);
+      taskProvider.updateTask(task.taskId, "NOT_STARTED", task.tag, task.title, task.descriptionText);
     })
   );
   context.subscriptions.push(
     vscode7.commands.registerCommand("abide.markInProgress", (task) => {
       vscode7.window.showInformationMessage(task.tag);
-      taskProvider.updateTask(task.taskId, "IN_PROGRESS", task.tag, task.title);
+      taskProvider.updateTask(task.taskId, "IN_PROGRESS", task.tag, task.title, task.descriptionText);
     })
   );
   context.subscriptions.push(
     vscode7.commands.registerCommand("abide.markForTesting", (task) => {
-      taskProvider.updateTask(task.taskId, "FOR_TESTING", task.tag, task.title);
+      taskProvider.updateTask(task.taskId, "FOR_TESTING", task.tag, task.title, task.descriptionText);
     })
   );
   context.subscriptions.push(
     vscode7.commands.registerCommand("abide.markDone", (task) => {
-      taskProvider.updateTask(task.taskId, "DONE", task.tag, task.title);
+      taskProvider.updateTask(task.taskId, "DONE", task.tag, task.title, task.descriptionText);
     })
   );
   taskProvider.fetchTasks();

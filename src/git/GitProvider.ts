@@ -87,7 +87,6 @@ export class GitHelper {
 
         if (switchToBranch === 'Yes') {
           await repository.checkout(branchName);
-          vscode.window.showInformationMessage(`Switched to branch: ${branchName}`);
         }
         return true;
       }
@@ -105,8 +104,6 @@ export class GitHelper {
 
       // Create and checkout the new branch
       await repository.createBranch(branchName, true);
-      vscode.window.showInformationMessage(`Created and checked out branch: ${branchName}`);
-
       return true;
     } catch (error) {
       vscode.window.showErrorMessage(`Failed to create branch: ${error}`);
