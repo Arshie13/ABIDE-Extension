@@ -14837,11 +14837,11 @@ var require_jwtclient = __commonJS({
        * Creates a JWT credentials instance using an API Key for authentication.
        * @param apiKey The API Key in string form.
        */
-      fromAPIKey(apiKey) {
-        if (typeof apiKey !== "string") {
+      fromAPIKey(apiKey2) {
+        if (typeof apiKey2 !== "string") {
           throw new Error("Must provide an API Key string.");
         }
-        this.apiKey = apiKey;
+        this.apiKey = apiKey2;
       }
       /**
        * Using the key or keyFile on the JWT client, obtain an object that contains
@@ -17752,8 +17752,8 @@ var require_googleauth = __commonJS({
        * @param options An optional options object.
        * @returns A JWT loaded from the key
        */
-      fromAPIKey(apiKey, options = {}) {
-        return new jwtclient_1.JWT({ ...options, apiKey });
+      fromAPIKey(apiKey2, options = {}) {
+        return new jwtclient_1.JWT({ ...options, apiKey: apiKey2 });
       }
       /**
        * Determines whether the current operating system is Windows.
@@ -19765,8 +19765,8 @@ var require_sender = __commonJS({
        * @param {Function} [generateMask] The function used to generate the masking
        *     key
        */
-      constructor(socket, extensions2, generateMask) {
-        this._extensions = extensions2 || {};
+      constructor(socket, extensions3, generateMask) {
+        this._extensions = extensions3 || {};
         if (generateMask) {
           this._generateMask = generateMask;
           this._maskBuffer = Buffer.alloc(4);
@@ -20589,9 +20589,9 @@ var require_extension = __commonJS({
       }
       return offers;
     }
-    function format(extensions2) {
-      return Object.keys(extensions2).map((extension) => {
-        let configurations = extensions2[extension];
+    function format(extensions3) {
+      return Object.keys(extensions3).map((extension) => {
+        let configurations = extensions3[extension];
         if (!Array.isArray(configurations)) configurations = [configurations];
         return configurations.map((params) => {
           return [extension].concat(
@@ -21302,22 +21302,22 @@ var require_websocket = __commonJS({
             abortHandshake(websocket, socket, message);
             return;
           }
-          let extensions2;
+          let extensions3;
           try {
-            extensions2 = parse(secWebSocketExtensions);
+            extensions3 = parse(secWebSocketExtensions);
           } catch (err) {
             const message = "Invalid Sec-WebSocket-Extensions header";
             abortHandshake(websocket, socket, message);
             return;
           }
-          const extensionNames = Object.keys(extensions2);
+          const extensionNames = Object.keys(extensions3);
           if (extensionNames.length !== 1 || extensionNames[0] !== PerMessageDeflate.extensionName) {
             const message = "Server indicated an extension that was not requested";
             abortHandshake(websocket, socket, message);
             return;
           }
           try {
-            perMessageDeflate.accept(extensions2[PerMessageDeflate.extensionName]);
+            perMessageDeflate.accept(extensions3[PerMessageDeflate.extensionName]);
           } catch (err) {
             const message = "Invalid Sec-WebSocket-Extensions header";
             abortHandshake(websocket, socket, message);
@@ -21871,7 +21871,7 @@ var require_websocket_server = __commonJS({
           }
         }
         const secWebSocketExtensions = req.headers["sec-websocket-extensions"];
-        const extensions2 = {};
+        const extensions3 = {};
         if (this.options.perMessageDeflate && secWebSocketExtensions !== void 0) {
           const perMessageDeflate = new PerMessageDeflate(
             this.options.perMessageDeflate,
@@ -21882,7 +21882,7 @@ var require_websocket_server = __commonJS({
             const offers = extension.parse(secWebSocketExtensions);
             if (offers[PerMessageDeflate.extensionName]) {
               perMessageDeflate.accept(offers[PerMessageDeflate.extensionName]);
-              extensions2[PerMessageDeflate.extensionName] = perMessageDeflate;
+              extensions3[PerMessageDeflate.extensionName] = perMessageDeflate;
             }
           } catch (err) {
             const message = "Invalid or unacceptable Sec-WebSocket-Extensions header";
@@ -21902,7 +21902,7 @@ var require_websocket_server = __commonJS({
                 return abortHandshake(socket, code || 401, message, headers);
               }
               this.completeUpgrade(
-                extensions2,
+                extensions3,
                 key,
                 protocols,
                 req,
@@ -21915,7 +21915,7 @@ var require_websocket_server = __commonJS({
           }
           if (!this.options.verifyClient(info)) return abortHandshake(socket, 401);
         }
-        this.completeUpgrade(extensions2, key, protocols, req, socket, head, cb);
+        this.completeUpgrade(extensions3, key, protocols, req, socket, head, cb);
       }
       /**
        * Upgrade the connection to WebSocket.
@@ -21930,7 +21930,7 @@ var require_websocket_server = __commonJS({
        * @throws {Error} If called more than once with the same socket
        * @private
        */
-      completeUpgrade(extensions2, key, protocols, req, socket, head, cb) {
+      completeUpgrade(extensions3, key, protocols, req, socket, head, cb) {
         if (!socket.readable || !socket.writable) return socket.destroy();
         if (socket[kWebSocket]) {
           throw new Error(
@@ -21953,13 +21953,13 @@ var require_websocket_server = __commonJS({
             ws._protocol = protocol;
           }
         }
-        if (extensions2[PerMessageDeflate.extensionName]) {
-          const params = extensions2[PerMessageDeflate.extensionName].params;
+        if (extensions3[PerMessageDeflate.extensionName]) {
+          const params = extensions3[PerMessageDeflate.extensionName].params;
           const value = extension.format({
             [PerMessageDeflate.extensionName]: [params]
           });
           headers.push(`Sec-WebSocket-Extensions: ${value}`);
-          ws._extensions = extensions2;
+          ws._extensions = extensions3;
         }
         this.emit("headers", headers, req);
         socket.write(headers.concat("\r\n").join("\r\n"));
@@ -34193,8 +34193,8 @@ var init_node = __esm({
         const websocketBaseUrl = this.apiClient.getWebsocketBaseUrl();
         const apiVersion = this.apiClient.getApiVersion();
         const headers = mapToHeaders$1(this.apiClient.getDefaultHeaders());
-        const apiKey = this.apiClient.getApiKey();
-        const url = `${websocketBaseUrl}/ws/google.ai.generativelanguage.${apiVersion}.GenerativeService.BidiGenerateMusic?key=${apiKey}`;
+        const apiKey2 = this.apiClient.getApiKey();
+        const url = `${websocketBaseUrl}/ws/google.ai.generativelanguage.${apiVersion}.GenerativeService.BidiGenerateMusic?key=${apiKey2}`;
         let onopenResolve = () => {
         };
         const onopenPromise = new Promise((resolve) => {
@@ -34381,10 +34381,10 @@ var init_node = __esm({
           url = `${websocketBaseUrl}/ws/google.cloud.aiplatform.${apiVersion}.LlmBidiService/BidiGenerateContent`;
           await this.auth.addAuthHeaders(headers, url);
         } else {
-          const apiKey = this.apiClient.getApiKey();
+          const apiKey2 = this.apiClient.getApiKey();
           let method = "BidiGenerateContent";
           let keyName = "key";
-          if (apiKey === null || apiKey === void 0 ? void 0 : apiKey.startsWith("auth_tokens/")) {
+          if (apiKey2 === null || apiKey2 === void 0 ? void 0 : apiKey2.startsWith("auth_tokens/")) {
             console.warn("Warning: Ephemeral token support is experimental and may change in future versions.");
             if (apiVersion !== "v1alpha") {
               console.warn("Warning: The SDK's ephemeral token support is in v1alpha only. Please use const ai = new GoogleGenAI({apiKey: token.name, httpOptions: { apiVersion: 'v1alpha' }}); before session connection.");
@@ -34392,7 +34392,7 @@ var init_node = __esm({
             method = "BidiGenerateContentConstrained";
             keyName = "access_token";
           }
-          url = `${websocketBaseUrl}/ws/google.ai.generativelanguage.${apiVersion}.GenerativeService.${method}?${keyName}=${apiKey}`;
+          url = `${websocketBaseUrl}/ws/google.ai.generativelanguage.${apiVersion}.GenerativeService.${method}?${keyName}=${apiKey2}`;
         }
         let onopenResolve = () => {
         };
@@ -37227,10 +37227,10 @@ __export(extension_exports, {
   deactivate: () => deactivate
 });
 module.exports = __toCommonJS(extension_exports);
-var vscode7 = __toESM(require("vscode"));
+var vscode8 = __toESM(require("vscode"));
 
 // src/panel/SwiperPanel.ts
-var vscode3 = __toESM(require("vscode"));
+var vscode4 = __toESM(require("vscode"));
 
 // src/getNonce.ts
 function getNonce() {
@@ -37317,10 +37317,165 @@ var GitHelper = class {
 };
 
 // src/helper/geminiHelper.ts
+var vscode3 = __toESM(require("vscode"));
+
+// src/helper/ContextHelper.ts
 var vscode2 = __toESM(require("vscode"));
+var ContextHelper = class {
+  /**
+   * Get current file information
+   */
+  static getCurrentFileContext() {
+    const editor = vscode2.window.activeTextEditor;
+    if (!editor) {
+      return "";
+    }
+    const document2 = editor.document;
+    const fileName = document2.fileName;
+    const language = document2.languageId;
+    const selectedText = editor.selection.isEmpty ? "" : document2.getText(editor.selection);
+    return `
+      Current file: ${fileName}
+      Language: ${language}
+      ${selectedText ? `Selected code:
+${selectedText}` : ""}
+    `.trim();
+  }
+  /**
+   * Get workspace information
+   */
+  static getWorkspaceContext() {
+    const workspaceFolders = vscode2.workspace.workspaceFolders;
+    if (!workspaceFolders || workspaceFolders.length === 0) {
+      return "No workspace open";
+    }
+    const workspaceName = workspaceFolders[0].name;
+    const workspacePath = workspaceFolders[0].uri.fsPath;
+    return `
+      Workspace: ${workspaceName}
+      Path: ${workspacePath}
+    `.trim();
+  }
+  /**
+  * Read Project.md file for project information
+  */
+  static async getProjectMdContext() {
+    const workspaceFolders = vscode2.workspace.workspaceFolders;
+    if (!workspaceFolders) {
+      return "";
+    }
+    try {
+      const projectMdUri = vscode2.Uri.joinPath(workspaceFolders[0].uri, "Project.md");
+      const projectMdContent = await vscode2.workspace.fs.readFile(projectMdUri);
+      const content = projectMdContent.toString();
+      return `
+        PROJECT INFORMATION (from Project.md):
+        ${content}
+      `.trim();
+    } catch (error) {
+      const alternatives = ["PROJECT.md", "project.md", "README.md"];
+      for (const alt of alternatives) {
+        try {
+          const altUri = vscode2.Uri.joinPath(workspaceFolders[0].uri, alt);
+          const altContent = await vscode2.workspace.fs.readFile(altUri);
+          return `
+            PROJECT INFORMATION (from ${alt}):
+            ${altContent.toString()}
+          `.trim();
+        } catch {
+          continue;
+        }
+      }
+      return "No Project.md or project documentation found";
+    }
+  }
+  /**
+   * Get project structure (package.json if available)
+   */
+  static async getProjectContext() {
+    const workspaceFolders = vscode2.workspace.workspaceFolders;
+    if (!workspaceFolders) {
+      return "";
+    }
+    try {
+      const packageJsonUri = vscode2.Uri.joinPath(workspaceFolders[0].uri, "package.json");
+      const packageJsonContent = await vscode2.workspace.fs.readFile(packageJsonUri);
+      const packageJson = JSON.parse(packageJsonContent.toString());
+      const dependencies = packageJson.dependencies ? Object.keys(packageJson.dependencies).slice(0, 10).join(", ") : "None";
+      return `
+        Project: ${packageJson.name || "Unknown"}
+        Description: ${packageJson.description || "No description"}
+        Main dependencies: ${dependencies}
+      `.trim();
+    } catch (error) {
+      return "No package.json found";
+    }
+  }
+  /**
+   * Get recent Git commits for context
+   */
+  static async getGitContext() {
+    try {
+      const gitExtension = vscode2.extensions.getExtension("vscode.git")?.exports;
+      if (!gitExtension) {
+        return "";
+      }
+      const git = gitExtension.getAPI(1);
+      if (git.repositories.length === 0) {
+        return "";
+      }
+      const repo = git.repositories[0];
+      const branch = repo.state.HEAD?.name || "Git not initialized";
+      return `
+        Current branch: ${branch}
+      `.trim();
+    } catch (error) {
+      return "Error getting Git context: " + error;
+    }
+  }
+  /**
+   * Get all existing tasks for context
+   */
+  static getExistingTasksContext(tasks) {
+    if (!tasks || tasks.length === 0) {
+      return "No existing tasks";
+    }
+    const taskList = tasks.slice(0, 5).map((t2) => `- ${t2.title} (${t2.status})`).join("\n");
+    return `
+      Recent tasks:
+      ${taskList}
+    `.trim();
+  }
+  /**
+   * Combine all context
+   */
+  static async getFullContext(tasks) {
+    const contexts = [
+      await this.getProjectMdContext(),
+      // Project.md comes first for high priority
+      this.getWorkspaceContext(),
+      await this.getProjectContext(),
+      await this.getGitContext(),
+      this.getCurrentFileContext(),
+      tasks ? this.getExistingTasksContext(tasks) : ""
+    ].filter((c) => c.length > 0);
+    return contexts.join("\n\n");
+  }
+  /**
+  * Get only project overview context (useful for simpler prompts)
+  */
+  static async getProjectOverviewContext() {
+    const contexts = [
+      await this.getProjectMdContext(),
+      await this.getProjectContext()
+    ].filter((c) => c.length > 0);
+    return contexts.join("\n\n");
+  }
+};
+
+// src/helper/geminiHelper.ts
+var apiKey = vscode3.workspace.getConfiguration().get("abide.geminiApiKey");
 async function promptGemini(prompt) {
-  const apiKey = vscode2.workspace.getConfiguration().get("abide.geminiApiKey");
-  console.log("api key: ", apiKey);
   const { GoogleGenAI: GoogleGenAI2 } = await Promise.resolve().then(() => (init_node(), node_exports));
   const ai = new GoogleGenAI2({
     apiKey
@@ -37329,7 +37484,56 @@ async function promptGemini(prompt) {
     model: "gemini-2.5-flash-lite",
     contents: prompt
   });
-  return response;
+  return response.text;
+}
+async function generateCode(task) {
+  const context = await ContextHelper.getFullContext();
+  const prompt = `You are a code generator assistant helping with a software development task.
+
+CONTEXT:
+${context}
+
+TASK:
+Title: ${task.title}
+Description: ${task.descriptionText || "No description provided"}
+Status: ${task.status}
+
+Based on the context and task information above, generate the code needed to complete this task.
+
+Requirements:
+- Generate production-ready, well-commented code
+- Follow best practices for the detected language/framework
+- Include error handling where appropriate
+- Match the coding style of the project
+- If multiple files are needed, clearly separate them with @@ delimiter
+
+IMPORTANT: Format your response EXACTLY like this:
+
+// File path: src/components/Example.tsx
+\`\`\`typescript
+[your code here]
+\`\`\`
+
+@@
+
+// File path: src/utils/helper.ts
+\`\`\`typescript
+[your code here]
+\`\`\`
+
+Use @@ to separate multiple files. ALWAYS include the "// File path:" comment before each code block.
+If creating only one file, still include the file path comment.
+
+Generate the code now:`;
+  try {
+    const response = await promptGemini(prompt);
+    if (!response) {
+      return "No code generated";
+    }
+    return response;
+  } catch (error) {
+    throw new Error(`Failed to generate code: ${error.message}`);
+  }
 }
 
 // src/panel/SwiperPanel.ts
@@ -37342,22 +37546,22 @@ var SwiperPanel = class _SwiperPanel {
   _extensionUri;
   _disposables = [];
   static createOrShow(extensionUri, taskProvider) {
-    const column = vscode3.window.activeTextEditor ? vscode3.window.activeTextEditor.viewColumn : void 0;
+    const column = vscode4.window.activeTextEditor ? vscode4.window.activeTextEditor.viewColumn : void 0;
     if (_SwiperPanel.currentPanel) {
       _SwiperPanel.currentPanel._panel.reveal(column);
       _SwiperPanel.currentPanel._update();
       _SwiperPanel.currentPanel._taskProvider = taskProvider;
       return;
     }
-    const panel = vscode3.window.createWebviewPanel(
+    const panel = vscode4.window.createWebviewPanel(
       _SwiperPanel.viewType,
       "Add Task",
-      column || vscode3.ViewColumn.One,
+      column || vscode4.ViewColumn.One,
       {
         enableScripts: true,
         localResourceRoots: [
-          vscode3.Uri.joinPath(extensionUri, "media"),
-          vscode3.Uri.joinPath(extensionUri, "out/compiled")
+          vscode4.Uri.joinPath(extensionUri, "media"),
+          vscode4.Uri.joinPath(extensionUri, "out/compiled")
         ]
       }
     );
@@ -37391,11 +37595,11 @@ var SwiperPanel = class _SwiperPanel {
               if (!res.ok) {
                 throw new Error(`HTTP ${res.status}`);
               }
-              vscode3.window.showInformationMessage("Task added successfully!");
+              vscode4.window.showInformationMessage("Task added successfully!");
               await this._taskProvider?.fetchTasks();
               await this._update();
             } catch (err) {
-              vscode3.window.showErrorMessage(`Failed to add task: ${err.message}`);
+              vscode4.window.showErrorMessage(`Failed to add task: ${err.message}`);
             }
             break;
           }
@@ -37414,11 +37618,11 @@ var SwiperPanel = class _SwiperPanel {
                     data.taskId
                   );
                   if (!branchCreated) {
-                    vscode3.window.showWarningMessage("Branch creation cancelled. Task status not updated.");
+                    vscode4.window.showWarningMessage("Branch creation cancelled. Task status not updated.");
                     return;
                   }
                 } else {
-                  const proceed = await vscode3.window.showWarningMessage(
+                  const proceed = await vscode4.window.showWarningMessage(
                     "Git not available. Continue without creating branch?",
                     "Yes",
                     "No"
@@ -37429,7 +37633,7 @@ var SwiperPanel = class _SwiperPanel {
                 }
               }
               if (newStatus === "DONE" && oldStatus !== "DONE") {
-                const generateCommit = await vscode3.window.showInformationMessage(
+                const generateCommit = await vscode4.window.showInformationMessage(
                   "Task completed! Generate a commit message?",
                   "Yes",
                   "No"
@@ -37437,11 +37641,11 @@ var SwiperPanel = class _SwiperPanel {
                 if (generateCommit === "Yes") {
                   const prompt = `Generate a concise git commit message for completing this task: "${data.taskTitle}: ${data.description}". Follow conventional commits format (feat:, fix:, etc.). Keep it under 72 characters. Return only the commit message.`;
                   const commitMessage = await promptGemini(prompt);
-                  if (!commitMessage.text) {
-                    vscode3.window.showErrorMessage("Couldn't generate commit message.");
+                  if (!commitMessage) {
+                    vscode4.window.showErrorMessage("Couldn't generate commit message.");
                   } else {
-                    await vscode3.env.clipboard.writeText(commitMessage.text);
-                    vscode3.window.showInformationMessage(`Commit message copied to clipboard: ${commitMessage.text}`);
+                    await vscode4.env.clipboard.writeText(commitMessage);
+                    vscode4.window.showInformationMessage(`Commit message copied to clipboard: ${commitMessage}`);
                   }
                 }
               }
@@ -37452,14 +37656,126 @@ var SwiperPanel = class _SwiperPanel {
               });
               if (!res.ok) {
                 const errorData = await res.text();
-                vscode3.window.showErrorMessage(`Couldn't update task: ${errorData}`);
+                vscode4.window.showErrorMessage(`Couldn't update task: ${errorData}`);
                 return;
               }
-              vscode3.window.showInformationMessage("Task status updated successfully!");
+              vscode4.window.showInformationMessage("Task status updated successfully!");
               await this._taskProvider?.fetchTasks();
               await this._update();
             } catch (err) {
-              vscode3.window.showErrorMessage(`Failed to update task status: ${err.message}`);
+              vscode4.window.showErrorMessage(`Failed to update task status: ${err.message}`);
+            }
+            break;
+          }
+          case "generateCode": {
+            if (!data.taskId || !this._taskProvider) {
+              return;
+            }
+            try {
+              const task = data;
+              if (!task) {
+                vscode4.window.showErrorMessage("Task not found");
+                return;
+              }
+              vscode4.window.showInformationMessage("Generating code...");
+              const generatedCode = await generateCode(task);
+              const splitGeneratedCode = generatedCode.split(/@{2,}/g).map((x2) => {
+                const codeblock = x2.replace(/```typescript|```javascript|```tsx|```jsx|```/g, "").trim();
+                const match = codeblock.match(/\/\/ File path:\s*(.*)/);
+                const filePath = match ? match[1].trim() : "untitled.ts";
+                const cleanedCode = match ? codeblock.replace(/\/\/ File path:.*\n?/, "").trim() : codeblock;
+                return {
+                  codeblock: cleanedCode,
+                  filePath
+                };
+              });
+              const workspaceFolders = vscode4.workspace.workspaceFolders;
+              if (!workspaceFolders) {
+                vscode4.window.showErrorMessage("No workspace folder open");
+                return;
+              }
+              const workspaceRoot = workspaceFolders[0].uri;
+              if (splitGeneratedCode.length > 1) {
+                for (const generated of splitGeneratedCode) {
+                  try {
+                    console.log("file path: ", generated.filePath);
+                    const fileUri = vscode4.Uri.joinPath(workspaceRoot, generated.filePath);
+                    const dirPath = fileUri.path.substring(0, fileUri.path.lastIndexOf("/"));
+                    const dirUri = vscode4.Uri.file(dirPath);
+                    try {
+                      await vscode4.workspace.fs.stat(dirUri);
+                    } catch {
+                      await vscode4.workspace.fs.createDirectory(dirUri);
+                    }
+                    let shouldWrite = true;
+                    try {
+                      await vscode4.workspace.fs.stat(fileUri);
+                      const overwrite = await vscode4.window.showWarningMessage(
+                        `File ${generated.filePath} already exists. Overwrite?`,
+                        "Yes",
+                        "No",
+                        "Open Existing"
+                      );
+                      if (overwrite === "No") {
+                        shouldWrite = false;
+                      } else if (overwrite === "Open Existing") {
+                        const doc = await vscode4.workspace.openTextDocument(fileUri);
+                        await vscode4.window.showTextDocument(doc);
+                        shouldWrite = false;
+                      }
+                    } catch {
+                    }
+                    if (shouldWrite) {
+                      const encoder = new TextEncoder();
+                      await vscode4.workspace.fs.writeFile(fileUri, encoder.encode(generated.codeblock));
+                      const doc = await vscode4.workspace.openTextDocument(fileUri);
+                      await vscode4.window.showTextDocument(doc);
+                    }
+                  } catch (fileErr) {
+                    vscode4.window.showErrorMessage(`Failed to create ${generated.filePath}: ${fileErr.message}`);
+                  }
+                }
+                vscode4.window.showInformationMessage("Code generated successfully!");
+              } else if (splitGeneratedCode.length === 1) {
+                const generated = splitGeneratedCode[0];
+                try {
+                  const fileUri = vscode4.Uri.joinPath(workspaceRoot, generated.filePath);
+                  const dirPath = fileUri.path.substring(0, fileUri.path.lastIndexOf("/"));
+                  const dirUri = vscode4.Uri.file(dirPath);
+                  try {
+                    await vscode4.workspace.fs.stat(dirUri);
+                  } catch {
+                    await vscode4.workspace.fs.createDirectory(dirUri);
+                  }
+                  let shouldWrite = true;
+                  try {
+                    await vscode4.workspace.fs.stat(fileUri);
+                    const overwrite = await vscode4.window.showWarningMessage(
+                      `File ${generated.filePath} already exists. Overwrite?`,
+                      "Yes",
+                      "No",
+                      "Open Existing"
+                    );
+                    if (overwrite === "No") {
+                      return;
+                    } else if (overwrite === "Open Existing") {
+                      const doc2 = await vscode4.workspace.openTextDocument(fileUri);
+                      await vscode4.window.showTextDocument(doc2);
+                      return;
+                    }
+                  } catch {
+                  }
+                  const encoder = new TextEncoder();
+                  await vscode4.workspace.fs.writeFile(fileUri, encoder.encode(generated.codeblock));
+                  const doc = await vscode4.workspace.openTextDocument(fileUri);
+                  await vscode4.window.showTextDocument(doc);
+                  vscode4.window.showInformationMessage("Code generated successfully!");
+                } catch (fileErr) {
+                  vscode4.window.showErrorMessage(`Failed to create file: ${fileErr.message}`);
+                }
+              }
+            } catch (err) {
+              vscode4.window.showErrorMessage(`Failed to generate code: ${err.message}`);
             }
             break;
           }
@@ -37467,14 +37783,14 @@ var SwiperPanel = class _SwiperPanel {
             if (!data.value) {
               return;
             }
-            vscode3.window.showInformationMessage(data.value);
+            vscode4.window.showInformationMessage(data.value);
             break;
           }
           case "onError": {
             if (!data.value) {
               return;
             }
-            vscode3.window.showErrorMessage(data.value);
+            vscode4.window.showErrorMessage(data.value);
             break;
           }
         }
@@ -37505,230 +37821,265 @@ var SwiperPanel = class _SwiperPanel {
     const formatStatus = (status) => {
       return status.replace(/_/g, " ").replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
     };
-    const taskListHtml = tasks.length === 0 ? `<tr><td colspan="2" style="text-align:center;">No tasks found.</td></tr>` : tasks.map((t2) => {
+    const taskListHtml = tasks.length === 0 ? `<tr><td colspan="3" style="text-align:center;">No tasks found.</td></tr>` : tasks.map((t2) => {
       const escapedTitle = t2.title.replace(/"/g, "&quot;");
       const statuses = ["NOT_STARTED", "IN_PROGRESS", "FOR_TESTING", "DONE"];
       return (
         /*html*/
         `
-            <tbody class="task-item">
-              <tr class="task-row" data-task-id="${t2.taskId}">
-                <td><strong>${t2.title}</strong></td>
-                <td>
-                  <select class="status-dropdown" 
-                          data-task-id="${t2.taskId}"
-                          data-task-title="${escapedTitle}"
-                          data-old-status="${t2.status}">
-                    ${statuses.map((s2) => `
-                      <option value="${s2}" ${t2.status === s2 ? "selected" : ""}>${formatStatus(s2)}</option>
-                    `).join("")}
-                  </select>
-                </td>
-              </tr>
-              <tr class="description-row" id="desc-${t2.taskId}">
-                <td colspan="2">${t2.descriptionText || "No description"}</td>
-              </tr>
-            </tbody>
-          `
+          <tbody class="task-item">
+            <tr class="task-row" data-task-id="${t2.taskId}">
+              <td><strong>${t2.title}</strong></td>
+              <td>
+                <select class="status-dropdown" 
+                        data-task-id="${t2.taskId}"
+                        data-task-title="${escapedTitle}"
+                        data-task-tag="${t2.tag || ""}"
+                        data-old-status="${t2.status}">
+                  ${statuses.map((s2) => `
+                    <option value="${s2}" ${t2.status === s2 ? "selected" : ""}>${formatStatus(s2)}</option>
+                  `).join("")}
+                </select>
+              </td>
+              <td>
+                <button class="generate-code-btn" data-task-id="${t2.taskId}">
+                  \u2728 Generate Code
+                </button>
+              </td>
+            </tr>
+            <tr class="description-row" id="desc-${t2.taskId}">
+              <td colspan="3">${t2.descriptionText || "No description"}</td>
+            </tr>
+          </tbody>
+        `
       );
     }).join("");
     return (
       /*html*/
       `
-    <!DOCTYPE html>
-    <html lang="en">
-      <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Tasks</title>
+      <!DOCTYPE html>
+      <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Tasks</title>
 
-          <style>
-            body {
-              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-              padding: 20px;
-              background-color: var(--vscode-editor-background);
-              color: var(--vscode-editor-foreground);
-            }
-            h1, h2 {
-              text-align: center;
-              color: var(--vscode-textLink-foreground);
-              margin-bottom: 20px;
-            }
-            .form-container {
-              background-color: var(--vscode-sideBar-background);
-              padding: 24px;
-              border-radius: 8px;
-              margin-bottom: 30px;
-              border: 1px solid var(--vscode-sideBar-border, #ccc);
-            }
-            label {
-              display: block;
-              margin-bottom: 8px;
-              font-weight: 600;
-            }
-            input[type="text"],
-            textarea,
-            select {
-              width: 100%;
-              padding: 10px;
-              border-radius: 4px;
-              border: 1px solid var(--vscode-input-border, #ccc);
-              background-color: var(--vscode-input-background, #fff);
-              color: var(--vscode-input-foreground, #000);
-              margin-bottom: 16px;
-              box-sizing: border-box;
-            }
-            textarea {
-              min-height: 80px;
-              resize: vertical;
-            }
-            button[type="submit"] {
-              width: 100%;
-              padding: 12px;
-              border-radius: 4px;
-              border: none;
-              background-color: var(--vscode-button-background, #007acc);
-              color: var(--vscode-button-foreground, #fff);
-              font-size: 16px;
-              font-weight: 600;
-              cursor: pointer;
-              transition: background-color 0.2s;
-            }
-            button[type="submit"]:hover {
-              background-color: var(--vscode-button-hoverBackground, #005a9e);
-            }
-            .task-table {
-              width: 100%;
-              border-collapse: collapse;
-              margin-top: 20px;
-            }
-            .task-table th,
-            .task-table td {
-              padding: 12px 15px;
-              text-align: left;
-              border-bottom: 1px solid var(--vscode-editorWidget-border, #ccc);
-            }
-            .task-table th {
-              background-color: var(--vscode-sideBar-background, #f0f0f0);
-              font-weight: 600;
-            }
-            .task-table .task-row {
-              cursor: pointer;
-            }
-            .task-table .task-row:hover {
-              background-color: var(--vscode-list-hoverBackground, #f0f0f0);
-            }
-            .task-table .description-row {
-              display: none;
-            }
-            .task-table .description-row td {
-              background-color: var(--vscode-editorWidget-background, #252526);
-              padding-left: 30px;
-            }
-            .status-dropdown {
-              margin-bottom: 0;
-              cursor: pointer;
-            }
-          </style>
-      </head>
+            <style>
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                padding: 20px;
+                background-color: var(--vscode-editor-background);
+                color: var(--vscode-editor-foreground);
+              }
+              h1, h2 {
+                text-align: center;
+                color: var(--vscode-textLink-foreground);
+                margin-bottom: 20px;
+              }
+              .form-container {
+                background-color: var(--vscode-sideBar-background);
+                padding: 24px;
+                border-radius: 8px;
+                margin-bottom: 30px;
+                border: 1px solid var(--vscode-sideBar-border, #ccc);
+              }
+              label {
+                display: block;
+                margin-bottom: 8px;
+                font-weight: 600;
+              }
+              input[type="text"],
+              textarea,
+              select {
+                width: 100%;
+                padding: 10px;
+                border-radius: 4px;
+                border: 1px solid var(--vscode-input-border, #ccc);
+                background-color: var(--vscode-input-background, #fff);
+                color: var(--vscode-input-foreground, #000);
+                margin-bottom: 16px;
+                box-sizing: border-box;
+              }
+              textarea {
+                min-height: 80px;
+                resize: vertical;
+              }
+              button[type="submit"] {
+                width: 100%;
+                padding: 12px;
+                border-radius: 4px;
+                border: none;
+                background-color: var(--vscode-button-background, #007acc);
+                color: var(--vscode-button-foreground, #fff);
+                font-size: 16px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: background-color 0.2s;
+              }
+              button[type="submit"]:hover {
+                background-color: var(--vscode-button-hoverBackground, #005a9e);
+              }
+              .task-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 20px;
+              }
+              .task-table th,
+              .task-table td {
+                padding: 12px 15px;
+                text-align: left;
+                border-bottom: 1px solid var(--vscode-editorWidget-border, #ccc);
+              }
+              .task-table th {
+                background-color: var(--vscode-sideBar-background, #f0f0f0);
+                font-weight: 600;
+              }
+              .task-table .task-row {
+                cursor: pointer;
+              }
+              .task-table .task-row:hover {
+                background-color: var(--vscode-list-hoverBackground, #f0f0f0);
+              }
+              .task-table .description-row {
+                display: none;
+              }
+              .task-table .description-row td {
+                background-color: var(--vscode-editorWidget-background, #252526);
+                padding-left: 30px;
+              }
+              .status-dropdown {
+                margin-bottom: 0;
+                cursor: pointer;
+              }
+              .generate-code-btn {
+                padding: 8px 12px;
+                border-radius: 4px;
+                border: none;
+                background-color: var(--vscode-button-secondaryBackground, #5f6a79);
+                color: var(--vscode-button-secondaryForeground, #fff);
+                font-size: 14px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: background-color 0.2s;
+                white-space: nowrap;
+              }
+              .generate-code-btn:hover {
+                background-color: var(--vscode-button-secondaryHoverBackground, #4c5561);
+              }
+            </style>
+        </head>
 
-      <body>
-          <h1>Task Manager</h1>
+        <body>
+            <h1>Task Manager</h1>
 
-          <!-- FORM -->
-          <div class="form-container">
-            <form id="taskForm">
-                <label for="title">Title</label>
-                <input type="text" id="title" name="title" required />
+            <!-- FORM -->
+            <div class="form-container">
+              <form id="taskForm">
+                  <label for="title">Title</label>
+                  <input type="text" id="title" name="title" required />
 
-                <label for="description">Description</label>
-                <textarea id="description" name="description"></textarea>
+                  <label for="description">Description</label>
+                  <textarea id="description" name="description"></textarea>
 
-                <button type="submit">Add Task</button>
-            </form>
-          </div>
+                  <button type="submit">Add Task</button>
+              </form>
+            </div>
 
-          <!-- TASK LIST -->
-          <h2>Tasks</h2>
-          <table class="task-table">
-            <thead>
-              <tr>
-                <th>Title</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            ${taskListHtml}
-          </table>
+            <!-- TASK LIST -->
+            <h2>Tasks</h2>
+            <table class="task-table">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              ${taskListHtml}
+            </table>
 
-          <script nonce="${nonce}">
-            const vscode = acquireVsCodeApi();
+            <script nonce="${nonce}">
+              const vscode = acquireVsCodeApi();
 
-            document.getElementById('taskForm').addEventListener('submit', (e) => {
-              e.preventDefault();
-              const titleInput = document.getElementById('title');
-              const descriptionInput = document.getElementById('description');
-              
-              const title = titleInput.value;
-              const description = descriptionInput.value;
-
-              vscode.postMessage({
-                type: "addTask",
-                title,
-                description
-              });
-
-              titleInput.value = '';
-              descriptionInput.value = '';
-            });
-
-            document.querySelectorAll('.task-row').forEach(row => {
-              row.addEventListener('click', (e) => {
-                if (e.target.tagName === 'SELECT') {
-                  return;
-                }
-                const taskId = row.dataset.taskId;
-                const descRow = document.getElementById('desc-' + taskId);
-                if (descRow) {
-                  descRow.style.display = descRow.style.display === 'none' || descRow.style.display === '' ? 'table-row' : 'none';
-                }
-              });
-            });
-
-            document.querySelectorAll('.status-dropdown').forEach(dropdown => {
-              dropdown.addEventListener('change', (e) => {
-                const taskId = e.target.dataset.taskId;
-                const taskTitle = e.target.dataset.taskTitle;
-                const oldStatus = e.target.dataset.oldStatus;
-                const newStatus = e.target.value;
+              document.getElementById('taskForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const titleInput = document.getElementById('title');
+                const descriptionInput = document.getElementById('description');
                 
+                const title = titleInput.value;
+                const description = descriptionInput.value;
+
                 vscode.postMessage({
-                  type: "updateTaskStatus",
-                  taskId,
-                  taskTitle,
-                  oldStatus,
-                  newStatus
+                  type: "addTask",
+                  title,
+                  description
                 });
 
-                // Update the old status for next change
-                e.target.dataset.oldStatus = newStatus;
+                titleInput.value = '';
+                descriptionInput.value = '';
               });
-            });
-          </script>
-      </body>
-    </html>
-  `
+
+              document.querySelectorAll('.task-row').forEach(row => {
+                row.addEventListener('click', (e) => {
+                  if (e.target.tagName === 'SELECT' || e.target.tagName === 'BUTTON') {
+                    return;
+                  }
+                  const taskId = row.dataset.taskId;
+                  const descRow = document.getElementById('desc-' + taskId);
+                  if (descRow) {
+                    descRow.style.display = descRow.style.display === 'none' || descRow.style.display === '' ? 'table-row' : 'none';
+                  }
+                });
+              });
+
+              document.querySelectorAll('.status-dropdown').forEach(dropdown => {
+                dropdown.addEventListener('change', (e) => {
+                  const taskId = e.target.dataset.taskId;
+                  const taskTitle = e.target.dataset.taskTitle;
+                  const taskTag = e.target.dataset.taskTag;
+                  const oldStatus = e.target.dataset.oldStatus;
+                  const newStatus = e.target.value;
+                  
+                  vscode.postMessage({
+                    type: "updateTaskStatus",
+                    taskId,
+                    taskTitle,
+                    taskTag,
+                    oldStatus,
+                    newStatus
+                  });
+
+                  e.target.dataset.oldStatus = newStatus;
+                });
+              });
+
+              document.querySelectorAll('.generate-code-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                  e.stopPropagation(); // Prevent row click from triggering
+                  const taskId = e.target.dataset.taskId;
+                  
+                  vscode.postMessage({
+                    type: "generateCode",
+                    taskId
+                  });
+                });
+              });
+            </script>
+        </body>
+      </html>
+    `
     );
   }
 };
 
 // src/provider/TaskProvider.ts
-var vscode6 = __toESM(require("vscode"));
+var vscode7 = __toESM(require("vscode"));
 
 // src/provider/TaskItem.ts
-var vscode4 = __toESM(require("vscode"));
-var TaskItem = class extends vscode4.TreeItem {
+var vscode5 = __toESM(require("vscode"));
+var TaskItem = class extends vscode5.TreeItem {
   constructor(taskId, title, descriptionText, tag, status) {
-    super(title, vscode4.TreeItemCollapsibleState.Collapsed);
+    super(title, vscode5.TreeItemCollapsibleState.Collapsed);
     this.taskId = taskId;
     this.title = title;
     this.descriptionText = descriptionText;
@@ -37739,10 +38090,10 @@ var TaskItem = class extends vscode4.TreeItem {
 };
 
 // src/provider/DescriptionItem.ts
-var vscode5 = __toESM(require("vscode"));
-var DescriptionItem = class extends vscode5.TreeItem {
+var vscode6 = __toESM(require("vscode"));
+var DescriptionItem = class extends vscode6.TreeItem {
   constructor(text) {
-    super(text, vscode5.TreeItemCollapsibleState.None);
+    super(text, vscode6.TreeItemCollapsibleState.None);
   }
 };
 
@@ -37752,7 +38103,7 @@ var TaskProvider = class {
     this.apiUrl = apiUrl;
     this._gitHelper = new GitHelper();
   }
-  _onDidChangeTreeData = new vscode6.EventEmitter();
+  _onDidChangeTreeData = new vscode7.EventEmitter();
   _gitHelper;
   onDidChangeTreeData = this._onDidChangeTreeData.event;
   tasks = [];
@@ -37775,9 +38126,9 @@ var TaskProvider = class {
       this.refresh();
     } catch (err) {
       if (err.code === "ECONNREFUSED") {
-        vscode6.window.showErrorMessage("Failed to load tasks. Please ensure the local server is running at http://localhost:3000.");
+        vscode7.window.showErrorMessage("Failed to load tasks. Please ensure the local server is running at http://localhost:3000.");
       } else {
-        vscode6.window.showErrorMessage(`Failed to load tasks: ${err.message}`);
+        vscode7.window.showErrorMessage(`Failed to load tasks: ${err.message}`);
       }
     }
   }
@@ -37790,10 +38141,10 @@ var TaskProvider = class {
           id.toString()
         );
         if (!branchCreated) {
-          vscode6.window.showWarningMessage("Branch creation cancelled.");
+          vscode7.window.showWarningMessage("Branch creation cancelled.");
         }
       } else {
-        const proceed = await vscode6.window.showWarningMessage(
+        const proceed = await vscode7.window.showWarningMessage(
           "Git not available. Continue without creating branch?",
           "Yes",
           "No"
@@ -37803,7 +38154,7 @@ var TaskProvider = class {
         }
       }
       if (status === "DONE") {
-        const generateCommit = await vscode6.window.showInformationMessage(
+        const generateCommit = await vscode7.window.showInformationMessage(
           "Task completed! Generate a commit message?",
           "Yes",
           "No"
@@ -37812,10 +38163,10 @@ var TaskProvider = class {
           const prompt = `Generate a concise git commit message for completing this task: "${taskTitle}: ${taskDescription}". Follow conventional commits format (feat:, fix:, etc.). Keep it under 72 characters. Return only the commit message.`;
           const commitMessage = await promptGemini(prompt);
           if (!commitMessage.text) {
-            vscode6.window.showErrorMessage("Couldn't generate commit message.");
+            vscode7.window.showErrorMessage("Couldn't generate commit message.");
           } else {
-            await vscode6.env.clipboard.writeText(commitMessage.text);
-            vscode6.window.showInformationMessage(`Commit message copied to clipboard: ${commitMessage.text}`);
+            await vscode7.env.clipboard.writeText(commitMessage.text);
+            vscode7.window.showInformationMessage(`Commit message copied to clipboard: ${commitMessage.text}`);
           }
         }
       }
@@ -37826,12 +38177,12 @@ var TaskProvider = class {
       });
       if (!response.ok) {
         const responseText = await response.text();
-        vscode6.window.showErrorMessage("Something went wrong while updating task: " + responseText);
+        vscode7.window.showErrorMessage("Something went wrong while updating task: " + responseText);
         return;
       }
       await this.fetchTasks();
     } catch (error) {
-      vscode6.window.showErrorMessage("Something went wrong: " + error.message);
+      vscode7.window.showErrorMessage("Something went wrong: " + error.message);
     }
   }
   getTreeItem(element) {
@@ -37852,12 +38203,12 @@ var TaskProvider = class {
 function activate(context) {
   const apiUrl = "http://localhost:3000";
   const taskProvider = new TaskProvider(apiUrl);
-  vscode7.window.registerTreeDataProvider("abideTasks", taskProvider);
-  const refreshCommand = vscode7.commands.registerCommand("abide.refreshTasks", () => {
+  vscode8.window.registerTreeDataProvider("abideTasks", taskProvider);
+  const refreshCommand = vscode8.commands.registerCommand("abide.refreshTasks", () => {
     taskProvider.fetchTasks();
   });
-  const addTaskCommand = vscode7.commands.registerCommand("abide.addTask", async () => {
-    const title = await vscode7.window.showInputBox({
+  const addTaskCommand = vscode8.commands.registerCommand("abide.addTask", async () => {
+    const title = await vscode8.window.showInputBox({
       prompt: "Enter new task title",
       placeHolder: "e.g. Fix bug #42"
     });
@@ -37865,11 +38216,11 @@ function activate(context) {
       return;
     }
     ;
-    const description = await vscode7.window.showInputBox({
+    const description = await vscode8.window.showInputBox({
       prompt: "Enter task description",
       placeHolder: "Optional details for this task"
     });
-    const tag = await vscode7.window.showInputBox({
+    const tag = await vscode8.window.showInputBox({
       prompt: "Enter task type",
       placeHolder: "feature | fix | bug | chore"
     });
@@ -37882,40 +38233,40 @@ function activate(context) {
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`);
       }
-      vscode7.window.showInformationMessage("Task added successfully!");
+      vscode8.window.showInformationMessage("Task added successfully!");
       taskProvider.fetchTasks();
     } catch (err) {
       if (err.code === "ECONNREFUSED") {
-        vscode7.window.showErrorMessage("Failed to add task. Please ensure the local server is running at http://localhost:3000.");
+        vscode8.window.showErrorMessage("Failed to add task. Please ensure the local server is running at http://localhost:3000.");
       } else {
-        vscode7.window.showErrorMessage(`Failed to add task: ${err.message}`);
+        vscode8.window.showErrorMessage(`Failed to add task: ${err.message}`);
       }
     }
   });
   context.subscriptions.push(refreshCommand, addTaskCommand);
   context.subscriptions.push(
-    vscode7.commands.registerCommand("abide.showPanel", () => {
+    vscode8.commands.registerCommand("abide.showPanel", () => {
       SwiperPanel.createOrShow(context.extensionUri, taskProvider);
     })
   );
   context.subscriptions.push(
-    vscode7.commands.registerCommand("abide.markNotStarted", (task) => {
+    vscode8.commands.registerCommand("abide.markNotStarted", (task) => {
       taskProvider.updateTask(task.taskId, "NOT_STARTED", task.tag, task.title, task.descriptionText);
     })
   );
   context.subscriptions.push(
-    vscode7.commands.registerCommand("abide.markInProgress", (task) => {
-      vscode7.window.showInformationMessage(task.tag);
+    vscode8.commands.registerCommand("abide.markInProgress", (task) => {
+      vscode8.window.showInformationMessage(task.tag);
       taskProvider.updateTask(task.taskId, "IN_PROGRESS", task.tag, task.title, task.descriptionText);
     })
   );
   context.subscriptions.push(
-    vscode7.commands.registerCommand("abide.markForTesting", (task) => {
+    vscode8.commands.registerCommand("abide.markForTesting", (task) => {
       taskProvider.updateTask(task.taskId, "FOR_TESTING", task.tag, task.title, task.descriptionText);
     })
   );
   context.subscriptions.push(
-    vscode7.commands.registerCommand("abide.markDone", (task) => {
+    vscode8.commands.registerCommand("abide.markDone", (task) => {
       taskProvider.updateTask(task.taskId, "DONE", task.tag, task.title, task.descriptionText);
     })
   );
